@@ -1,0 +1,62 @@
+:root {
+  --primary: 37 99 235;      /* #2563eb */
+  --primary-dark: 29 78 216; /* #1d4ed8 */
+  --secondary: 79 70 229;    /* #4f46e5 */
+  --accent: 6 182 212;       /* #06b6d4 */
+  --light: 248 250 252;      /* #f8fafc */
+  --dark: 30 41 59;          /* #1e293b */
+  --success: 16 185 129;     /* #10b981 */
+  --warning: 245 158 11;     /* #f59e0b */
+  --danger: 239 68 68;       /* #ef4444 */
+}
+
+@tailwind utilities;
+
+/* Base styles */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-light text-dark;
+  line-height: 1.6;
+}
+
+/* Custom utilities */
+.btn {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-md font-semibold transition-all duration-300;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary-dark;
+}
+
+.btn-outline {
+  @apply border-2 border-white text-white hover:bg-white hover:text-primary;
+}
+
+/* Layout utilities */
+.container {
+  @apply mx-auto px-4 sm:px-6 lg:px-8;
+  max-width: 1280px;
+}
+
+/* Section spacing */
+section {
+  @apply py-16 md:py-24;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold leading-tight;
+}
+
+/* Transitions */
+.transition-all {
+  @apply transition-[all] duration-300 ease-in-out;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-xl shadow-lg transition-all hover:shadow-xl;
+}

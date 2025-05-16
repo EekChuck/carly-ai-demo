@@ -1,0 +1,82 @@
+:root {
+  --primary: 37 99 235;      /* #2563eb */
+  --primary-dark: 29 78 216; /* #1d4ed8 */
+  --secondary: 79 70 229;    /* #4f46e5 */
+  --accent: 6 182 212;       /* #06b6d4 */
+  --light: 248 250 252;      /* #f8fafc */
+  --dark: 30 41 59;          /* #1e293b */
+  --success: 16 185 129;     /* #10b981 */
+  --warning: 245 158 11;     /* #f59e0b */
+  --danger: 239 68 68;       /* #ef4444 */
+}
+
+@tailwind utilities;
+
+/* Base styles */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: rgb(var(--light));
+  color: rgb(var(--dark));
+  line-height: 1.6;
+}
+
+/* Custom utilities */
+.btn {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-md font-semibold transition-all duration-300;
+}
+
+.btn-primary {
+  background-color: rgb(var(--primary));
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: rgb(var(--primary-dark));
+}
+
+.btn-outline {
+  border: 2px solid white;
+  color: white;
+}
+
+.btn-outline:hover {
+  background-color: white;
+  color: rgb(var(--primary));
+}
+
+/* Layout utilities */
+.container {
+  @apply mx-auto px-4 sm:px-6 lg:px-8;
+  max-width: 1280px;
+}
+
+/* Section spacing */
+section {
+  @apply py-16 md:py-24;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold leading-tight;
+}
+
+/* Transitions */
+.transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Card styles */
+.card {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.card:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
