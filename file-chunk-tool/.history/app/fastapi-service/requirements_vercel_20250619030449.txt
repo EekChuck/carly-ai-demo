@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+requests
+# Uncomment and use the appropriate cloud storage SDK
+# @vercel/blob  # For Vercel Blob Storage
+# boto3         # For AWS S3
+# google-cloud-storage  # For Google Cloud Storage

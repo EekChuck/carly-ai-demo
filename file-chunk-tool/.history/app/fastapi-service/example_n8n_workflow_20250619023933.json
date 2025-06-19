@@ -1,0 +1,245 @@
+{
+  "name": "File Chunker to Whisper Transcription",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/path/to/large/audio/file.mp3"
+      },
+      "name": "Read Binary File",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi-service:8000/upload",
+        "method": "POST",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "name": "Upload to Chunker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "sourceKey": "json.chunks",
+        "options": {}
+      },
+      "name": "Extract Chunks",
+      "type": "n8n-nodes-base.moveData",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1
+      },
+      "name": "Split Into Chunks",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://fastapi-service:8000/chunks/{{$node[\"Upload to Chunker\"].json[\"file_id\"]}}/{{$json[\"chunk_number\"]}}",
+        "method": "GET",
+        "options": {}
+      },
+      "name": "Get Chunk File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            }
+          ]
+        },
+        "method": "POST",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Whisper Transcription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "name": "Combine Transcriptions",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Combine all transcriptions into a single text\nconst transcriptions = items.map(item => item.json.text);\nreturn [\n  {\n    json: {\n      full_transcription: transcriptions.join(' '),\n      original_filename: $node[\"Upload to Chunker\"].json.original_filename,\n      chunks_count: $node[\"Upload to Chunker\"].json.num_chunks\n    }\n  }\n];"
+      },
+      "name": "Merge Transcriptions",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "=/path/to/output/{{$node[\"Upload to Chunker\"].json.original_filename}}.txt",
+        "fileName": "={{$node[\"Upload to Chunker\"].json.original_filename}}.txt",
+        "fileContent": "={{$json.full_transcription}}",
+        "options": {}
+      },
+      "name": "Save Transcription",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Read Binary File": {
+      "main": [
+        [
+          {
+            "node": "Upload to Chunker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Chunker": {
+      "main": [
+        [
+          {
+            "node": "Extract Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Chunks": {
+      "main": [
+        [
+          {
+            "node": "Split Into Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Chunks": {
+      "main": [
+        [
+          {
+            "node": "Get Chunk File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chunk File": {
+      "main": [
+        [
+          {
+            "node": "Whisper Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper Transcription": {
+      "main": [
+        [
+          {
+            "node": "Combine Transcriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Transcriptions": {
+      "main": [
+        [
+          {
+            "node": "Merge Transcriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Transcriptions": {
+      "main": [
+        [
+          {
+            "node": "Save Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "",
+  "id": "1",
+  "meta": {
+    "instanceId": "example"
+  },
+  "tags": []
+}

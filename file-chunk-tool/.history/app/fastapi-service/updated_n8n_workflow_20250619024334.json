@@ -1,0 +1,244 @@
+{
+  "name": "Audio Notes with File Chunking",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/u/0/folders/1J0a7oleiyDbVY_9crAcbaXec0Uxb4x2E",
+          "mode": "url"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "google-drive-trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json[\"id\"] }}?alt=media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "name": "Download File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "download-file"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileSizeKb = $json.size / 1024;\nconst estimatedDurationMin = fileSizeKb / 200;\nconst costPerMin = 0.006;\n\nreturn [{\n  json: {\n    filename: $json.name || 'Unknown',\n    estimated_duration_minutes: parseFloat(estimatedDurationMin.toFixed(2)),\n    duration_seconds: Math.round(estimatedDurationMin * 60),\n    cost: parseFloat((estimatedDurationMin * costPerMin).toFixed(4)),\n    token_count: 0,\n    file_size_mb: parseFloat((Number($json.size) / 1000000).toFixed(2))\n  }\n}];"
+      },
+      "name": "Calculate Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "id": "calculate-metadata"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "version": 2,
+          "conditions": [
+            {
+              "id": "file-size-check",
+              "leftValue": "={{ $json.file_size_mb }}",
+              "rightValue": 25,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "combinator": "and"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Check File Size",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "check-file-size"
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi-service:8000/upload",
+        "method": "POST",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "name": "Send to Chunker",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        -100
+      ],
+      "id": "send-to-chunker"
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "sourceKey": "json.chunks",
+        "options": {}
+      },
+      "name": "Extract Chunks",
+      "type": "n8n-nodes-base.moveData",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -100
+      ],
+      "id": "extract-chunks"
+    },
+    {
+      "parameters": {
+        "batchSize": 1
+      },
+      "name": "Process Each Chunk",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -100
+      ],
+      "id": "process-each-chunk"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "name": "Transcribe Chunk",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1200,
+        -100
+      ],
+      "id": "transcribe-chunk"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "name": "Combine Transcriptions",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        -100
+      ],
+      "id": "combine-transcriptions"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine all transcriptions into a single text\nconst transcriptions = items.map(item => item.json.text);\nreturn [{\n  json: {\n    text: transcriptions.join(' '),\n    original_filename: $node[\"Download File\"].json.name,\n    chunks_count: $node[\"Send to Chunker\"].json.num_chunks || 1\n  }\n}];"
+      },
+      "name": "Merge Transcriptions",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -100
+      ],
+      "id": "merge-transcriptions"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "name": "Direct Transcription",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        600,
+        100
+      ],
+      "id": "direct-transcription"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1800,
+        0
+      ],
+      "id": "merge-results"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Respond using only the `format_final_json_response` tool.\nSystem: You are a structured-output AI. You MUST use the tool `format_final_json_response` to return your final output. Do not describe the format. Do not return the schema. Do not output anything else. Only use this tool once you are ready to respond.\n\nHuman: You are a meeting summarizer AI. Given this meeting transcript, extract structured JSON using this tool.\n\nUse this:\n\nTool: format_final_json_response  \nParameters:\n{\n  \"title\": \"Concise title of the meeting\",\n  \"summary\": \"Brief summary of the meeting in 2–3 sentences.\",\n  \"transcript\": \"Cleaned-up transcript text\",\n  \"main_points\": [\"Point 1\", \"Point 2\", \"Point 3\"],\n  \"potential_action_items\": [\"Action 1\", \"Action 2\"],\n  \"arguments\": [\n    {\n      \"topic\": \"Issue discussed\",\n      \"position\": \"Position taken\",\n      \"justification\": \"Rationale\"\n    }\n  ],\n  \"attendees\": [\"Name1\", \"Name2\"],\n  \"cost\": 0.00,\n  \"duration_seconds\": 0,\n  \"token_count\": 0\n}\n\nTranscript:\n{{ $json['text'] }}\n\nRespond using only the `format_final_json_response` tool.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        2000,
+        0
+      ],
+      "id": "ai-agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        200
+      ],
+      "id": "openai-chat-model"
+    },
+    {
+      "parameters": {

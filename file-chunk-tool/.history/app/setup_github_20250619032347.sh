@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Script to set up GitHub repository for the file chunking service
-# Repository: https://github.com/EekChuck/audio-chunker.git
+# Repository: https://github.com/EekChuck/outperf-ai.git
 
 # No need to provide repository name as it's already set
-REPO_URL="https://github.com/EekChuck/audio-chunker.git"
+REPO_URL="https://github.com/EekChuck/outperf-ai.git"
 
 # Initialize Git repository
 echo "Initializing Git repository..."

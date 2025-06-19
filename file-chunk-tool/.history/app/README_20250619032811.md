@@ -1,0 +1,182 @@
+# File Chunking Service for Whisper Transcription
+
+This project provides a solution for chunking large files (>25MB) into smaller pieces (<25MB) for processing with OpenAI's Whisper transcription service via n8n workflows.
+
+## Project Structure
+
+```
+/app/
+  ├─ n8n/                ← your existing n8n service
+  └─ fastapi-service/    ← file chunking service
+      ├─ main.py         ← FastAPI application
+      ├─ requirements.txt ← Python dependencies
+      ├─ Dockerfile      ← Docker configuration
+      ├─ README.md       ← Service documentation
+      ├─ test_client.py  ← Test script for the service
+      ├─ example_n8n_workflow.json ← Basic example n8n workflow
+      └─ updated_n8n_workflow.json ← Advanced n8n workflow for audio notes
+```
+
+## Getting Started
+
+### Running with Docker Compose (Local Development)
+
+The `docker-compose.yml` file is provided for local development and testing, allowing you to run both the n8n service and the file chunking service together:
+
+```bash
+cd app
+docker-compose up -d
+```
+
+This will start:
+- n8n on http://localhost:5678
+- File Chunking Service on http://localhost:8000
+
+> **Note**: Docker Compose is **not required** for production deployment to platforms like Render. It's primarily for local development and self-hosted deployments.
+
+### Running the File Chunking Service Separately
+
+If you want to run just the file chunking service:
+
+```bash
+cd app/fastapi-service
+docker build -t file-chunker .
+docker run -p 8000:8000 file-chunker
+```
+
+Or without Docker:
+
+```bash
+cd app/fastapi-service
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+### Recommended Deployment Options
+
+For production deployment, consider these options that better support file processing workloads:
+
+1. **Render (Recommended)**:
+   - Supports both Docker and Python deployments
+   - Provides persistent disk storage
+   - Easy GitHub integration
+   - See [RENDER_DEPLOYMENT.md](app/fastapi-service/RENDER_DEPLOYMENT.md) for detailed instructions
+
+2. **Other Docker-based platforms**:
+   - **DigitalOcean App Platform**: Supports Docker deployments with persistent storage
+   - **Railway**: Easy deployment with generous resource limits
+   - **Heroku**: Traditional Python app deployment with persistent file system (in paid tiers)
+
+3. **Self-hosted**:
+   - Any VPS provider (DigitalOcean, AWS EC2, Linode, etc.)
+   - Use Docker Compose for running both FastAPI and n8n services together
+
+These platforms provide persistent storage and higher payload limits necessary for processing large files.
+
+> **Note**: Serverless platforms like Vercel are **not recommended** for this service due to payload size limitations (typically 4.5-50MB) and ephemeral file systems, which defeat the purpose of a service designed to handle files larger than 25MB.
+
+## Testing the File Chunking Service
+
+### Testing with Local Files
+
+You can use the included test client to test the file chunking service with local files:
+
+```bash
+cd app/fastapi-service
+python test_client.py --file /path/to/large/file.mp3
+```
+
+This will upload the file to the service and display information about the chunks.
+
+### Testing with Google Drive Files
+
+For testing with Google Drive files, use the Google Drive test client:
+
+```bash
+cd app/fastapi-service
+python google_drive_test_client.py --file "https://drive.google.com/file/d/YOUR_FILE_ID/view"
+```
+
+The Google Drive test client supports various Google Drive URL formats:
+- `https://drive.google.com/file/d/FILE_ID/view`
+- `https://drive.google.com/open?id=FILE_ID`
+- `https://docs.google.com/uc?id=FILE_ID`
+
+This client will:
+1. Download the file from Google Drive to a temporary location
+2. Upload it to the chunking service
+3. Display information about the chunks
+
+## Integrating with n8n
+
+### Basic Integration
+
+1. Import the example workflow from `app/fastapi-service/example_n8n_workflow.json` into your n8n instance
+2. Update the file paths and API keys in the workflow
+3. Activate and run the workflow
+
+The basic workflow will:
+1. Read a large audio file
+2. Send it to the File Chunker service
+3. Split the file into chunks if necessary
+4. Send each chunk to Whisper for transcription
+5. Combine the transcriptions
+6. Save the result to a file
+
+### Advanced Audio Notes Integration
+
+For a more advanced integration that matches your existing audio notes workflow:
+
+1. Import the workflow from `app/fastapi-service/updated_n8n_workflow.json` into your n8n instance
+2. This workflow integrates with:
+   - Google Drive for monitoring new audio files
+   - OpenAI for transcription
+   - Notion for storing results
+
+The advanced workflow will:
+1. Monitor a Google Drive folder for new audio files
+2. Check if the file size exceeds 25MB
+3. For large files: chunk them using the File Chunker service, transcribe each chunk, then combine
+4. For smaller files: transcribe directly
+5. Process the transcription with an AI agent to extract structured information
+6. Format the results and save them to Notion
+
+## API Documentation
+
+When the FastAPI service is running, you can access the API documentation at:
+- http://localhost:8000/docs (Swagger UI)
+- http://localhost:8000/redoc (ReDoc)
+
+## Key Features
+
+- Automatically chunks files larger than 25MB into smaller pieces
+- Stores original files and chunks for later retrieval
+- Provides detailed information about chunks for processing
+- Includes a test client for easy testing
+- Includes both basic and advanced n8n workflow examples for integration
+- Docker and Docker Compose support for easy deployment
+
+## Notes
+
+- The chunking service creates two directories:
+  - `uploads/` for storing original uploaded files
+  - `chunks/` for storing chunked files
+- These directories are mounted as volumes in the Docker setup to persist data
+
+## GitHub Repository Setup
+
+To add this project to your GitHub account:
+
+### Option 1: Using the Setup Script
+
+The script is pre-configured for your repository at https://github.com/EekChuck/audio-chunker.git
+
+Run the setup script:
+```bash
+cd app
+./setup_github.sh
+```
+
+### Option 2: Manual Setup
+
+Follow the step-by-step instructions in [GITHUB_SETUP.md](GITHUB_SETUP.md).
