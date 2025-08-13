@@ -603,7 +603,7 @@ import { useVapiCall } from '@vapi-ai/client-sdk-react';
 #### Key Discoveries
 
 **API Key Format**:
-- Expected: UUID format like `a6d1dce6-0a06-4d87-a43c-0a63bb2bba99`
+- Expected: UUID format like `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
 - NOT: Prefixed format like `pk_...` or `sk_...`
 
 **Assistant ID Usage**:
@@ -644,9 +644,9 @@ src/
 
 #### Environment Variables
 ```env
-NEXT_PUBLIC_VAPI_PUBLIC_KEY=a6d1dce6-0a06-4d87-a43c-0a63bb2bba99
-VAPI_PRIVATE_KEY=e686b041-ffeb-4e0e-b45c-4300b4818497
-NEXT_PUBLIC_CARLY_NEW_VEHICLE_ASSISTANT_ID=b8442b2e-f220-48d3-8554-9ef3d6c7474f
+NEXT_PUBLIC_VAPI_PUBLIC_KEY=your_vapi_public_key_here
+VAPI_PRIVATE_KEY=your_vapi_private_key_here
+NEXT_PUBLIC_CARLY_NEW_VEHICLE_ASSISTANT_ID=your_assistant_id_here
 ```
 
 ### Error Handling

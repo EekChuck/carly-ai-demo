@@ -19,7 +19,7 @@
                 console.log('Vapi constructor:', Vapi);
                 console.log('Vapi prototype:', Vapi.prototype);
                 
-                const vapi = new Vapi('a6d1dce6-0a06-4d87-a43c-0a63bb2bba99');
+                const vapi = new Vapi('YOUR_VAPI_PUBLIC_KEY_HERE');
                 
                 console.log('Vapi instance:', vapi);
                 console.log('Vapi instance methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(vapi)));
@@ -51,7 +51,7 @@
                 document.getElementById('status').innerHTML = '🔄 Starting call...';
                 try {
                     // Try the exact same call our React app makes
-                    window.testVapi.start('b8442b2e-f220-48d3-8554-9ef3d6c7474f');
+                    window.testVapi.start('YOUR_ASSISTANT_ID_HERE');
                 } catch (error) {
                     console.error('Start call error:', error);
                     document.getElementById('status').innerHTML = `❌ Start error: ${error.message}`;

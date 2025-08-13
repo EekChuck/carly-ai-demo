@@ -29,7 +29,7 @@
         
         console.log('Vapi loaded:', Vapi);
         
-        const vapi = new Vapi('a6d1dce6-0a06-4d87-a43c-0a63bb2bba99');
+        const vapi = new Vapi('YOUR_VAPI_PUBLIC_KEY_HERE');
         const status = document.getElementById('status');
         
         vapi.on('call-start', () => {
@@ -56,14 +56,14 @@
             try {
                 // Try different configuration formats
                 console.log('Trying method 1: assistantId only');
-                vapi.start('b8442b2e-f220-48d3-8554-9ef3d6c7474f');
+                vapi.start('YOUR_ASSISTANT_ID_HERE');
             } catch (error) {
                 console.error('Method 1 failed:', error);
                 try {
                     console.log('Trying method 2: assistant object');
                     vapi.start({
                         assistant: {
-                            id: 'b8442b2e-f220-48d3-8554-9ef3d6c7474f'
+                            id: 'YOUR_ASSISTANT_ID_HERE'
                         }
                     });
                 } catch (error2) {
