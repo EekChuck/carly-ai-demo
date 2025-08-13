@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Vapi Test</title>
+</head>
+<body>
+    <h1>Simple Vapi Test</h1>
+    <button id="test-call">Test Call</button>
+    <div id="status">Loading...</div>
+    
+    <script type="module">
+        // Use the exact same approach as our React app
+        async function loadVapi() {
+            try {
+                // Try to load from the same source our React app uses
+                const VapiModule = await import('https://unpkg.com/@vapi-ai/web@2.3.8/dist/index.js');
+                const Vapi = VapiModule.default;
+                
+                console.log('Vapi constructor:', Vapi);
+                console.log('Vapi prototype:', Vapi.prototype);
+                
+                const vapi = new Vapi('a6d1dce6-0a06-4d87-a43c-0a63bb2bba99');
+                
+                console.log('Vapi instance:', vapi);
+                console.log('Vapi instance methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(vapi)));
+                
+                const status = document.getElementById('status');
+                
+                vapi.on('call-start', () => {
+                    status.innerHTML = '✅ Call started successfully!';
+                });
+                
+                vapi.on('error', (error) => {
+                    console.error('Vapi error:', error);
+                    status.innerHTML = `❌ Error: ${JSON.stringify(error, null, 2)}`;
+                });
+                
+                window.testVapi = vapi;
+                status.innerHTML = '✅ Vapi loaded. Ready to test!';
+                
+            } catch (error) {
+                console.error('Failed to load Vapi:', error);
+                document.getElementById('status').innerHTML = `❌ Failed to load: ${error.message}`;
+            }
+        }
+        
+        loadVapi();
+        
+        document.getElementById('test-call').addEventListener('click', () => {
+            if (window.testVapi) {
+                document.getElementById('status').innerHTML = '🔄 Starting call...';
+                try {
+                    // Try the exact same call our React app makes
+                    window.testVapi.start('b8442b2e-f220-48d3-8554-9ef3d6c7474f');
+                } catch (error) {
+                    console.error('Start call error:', error);
+                    document.getElementById('status').innerHTML = `❌ Start error: ${error.message}`;
+                }
+            } else {
+                document.getElementById('status').innerHTML = '❌ Vapi not loaded yet';
+            }
+        });
+    </script>
+</body>
+</html>

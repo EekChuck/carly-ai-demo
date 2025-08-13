@@ -575,3 +575,134 @@ When an app suddenly stops working:
 2. Look at actual error messages in terminal/browser console
 3. Don't assume the problem is in the code if nothing was changed
 4. Global configuration files can override project-specific settings
+
+## Vapi Voice Integration (January 2025)
+
+### The Challenge
+Integrate Vapi AI voice assistant to enable conversational interactions when users click on agent task cards.
+
+### Integration Journey
+
+#### Initial Approach - React SDK
+Started with `@vapi-ai/client-sdk-react` and custom `useVapi` hook:
+```typescript
+// Initial attempt with React SDK
+import { useVapiCall } from '@vapi-ai/client-sdk-react';
+```
+
+**Issues Encountered**:
+1. **SSR Incompatibility**: React hooks executing on server side
+2. **Import Errors**: `useVapi` doesn't exist (should be `useVapiCall`)
+3. **400 Bad Request**: API rejecting `assistantId` in object format
+
+#### SDK Evolution
+1. **First Try**: `@vapi-ai/web` with custom hook
+2. **Second Try**: `@vapi-ai/client-sdk-react` with proper imports
+3. **Final Solution**: Direct `@vapi-ai/web` SDK with dynamic imports
+
+#### Key Discoveries
+
+**API Key Format**:
+- Expected: UUID format like `a6d1dce6-0a06-4d87-a43c-0a63bb2bba99`
+- NOT: Prefixed format like `pk_...` or `sk_...`
+
+**Assistant ID Usage**:
+```typescript
+// Wrong - causes 400 error
+vapi.start({ assistantId: id });
+
+// Correct - pass as string
+vapi.start(assistantId);
+```
+
+**Dynamic Import Pattern**:
+```typescript
+// Avoid SSR issues with client-only SDK
+const VoiceInterface = dynamic(
+  () => import("@/components/ui/voice-interface-simple").then(mod => mod.VoiceInterfaceSimple),
+  { 
+    ssr: false,
+    loading: () => <div>Loading voice interface...</div>
+  }
+);
+```
+
+### Final Working Architecture
+
+#### Component Structure
+```
+src/
+├── components/
+│   └── ui/
+│       ├── voice-interface.tsx         # Original attempt (React SDK)
+│       └── voice-interface-simple.tsx  # Working solution (Web SDK)
+├── hooks/
+│   └── useVapi.ts                      # Custom hook (not used in final)
+└── app/
+    └── page.tsx                         # Dynamic import of voice component
+```
+
+#### Environment Variables
+```env
+NEXT_PUBLIC_VAPI_PUBLIC_KEY=a6d1dce6-0a06-4d87-a43c-0a63bb2bba99
+VAPI_PRIVATE_KEY=e686b041-ffeb-4e0e-b45c-4300b4818497
+NEXT_PUBLIC_CARLY_NEW_VEHICLE_ASSISTANT_ID=b8442b2e-f220-48d3-8554-9ef3d6c7474f
+```
+
+### Error Handling
+
+#### Daily.co Cleanup Error
+After successful calls, Daily.co (WebRTC provider) throws cleanup errors:
+```typescript
+// Filter expected cleanup errors
+if (error?.message?.includes('Meeting ended') || 
+    error?.message?.includes('Meeting has ended') ||
+    error?.message?.includes('ejection')) {
+  console.log('Call ended normally');
+} else {
+  console.error('Vapi error:', error);
+}
+```
+
+### Testing Approach
+Created standalone HTML test files to isolate SDK issues:
+- `public/test-vapi.html` - Basic integration test
+- `public/test-vapi-simple.html` - Simplified API test
+
+These helped identify the correct parameter format for `vapi.start()`.
+
+### Technical Stack
+- **Voice Platform**: Vapi AI
+- **WebRTC Provider**: Daily.co (handled by Vapi)
+- **Voice Provider**: 11labs (configured in Vapi dashboard)
+- **SDK**: `@vapi-ai/web` v2.1.4
+- **Framework**: Next.js 15.4.6 with App Router
+- **Package Manager**: Bun (critical - not npm/pnpm)
+
+### Key Learnings
+
+1. **SDK Selection**: Simpler web SDK often more reliable than framework-specific versions
+2. **SSR Challenges**: Always use dynamic imports with `ssr: false` for client-only SDKs
+3. **Error Messages**: Browser console often more informative than server logs
+4. **API Format**: Check actual network requests to understand API expectations
+5. **Cleanup Handling**: Expected errors (like connection cleanup) should be filtered
+6. **Documentation vs Reality**: Widget snippets can reveal correct implementation
+
+### Performance Optimization
+- **Lazy Loading**: Voice SDK only loaded when needed
+- **Cleanup Timing**: 100ms delay before callbacks to allow Daily.co cleanup
+- **Error Filtering**: Reduces console noise from expected behaviors
+
+### Current State
+✅ Voice calls working successfully
+✅ Multiple assistant IDs supported per agent
+✅ Clean error handling for Daily.co
+✅ Dynamic loading prevents SSR issues
+✅ Voice provider (11labs) configured in Vapi dashboard
+
+### Future Enhancements
+- [ ] Visual call quality indicators
+- [ ] Call transcript display
+- [ ] Multi-language support
+- [ ] Call analytics integration
+- [ ] Custom voice provider options

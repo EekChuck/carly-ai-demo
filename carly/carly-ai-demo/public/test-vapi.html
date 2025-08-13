@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vapi Test</title>
+</head>
+<body>
+    <h1>Vapi Connection Test</h1>
+    <button id="test-call">Test Call</button>
+    <div id="status"></div>
+    
+    <script type="module">
+        // Try to import Vapi from different CDNs
+        let Vapi;
+        try {
+            // Try the official CDN first
+            const module = await import('https://unpkg.com/@vapi-ai/web@latest/dist/index.js');
+            Vapi = module.default || module.Vapi;
+        } catch (e1) {
+            try {
+                // Try alternative CDN
+                const module = await import('https://cdn.skypack.dev/@vapi-ai/web');
+                Vapi = module.default || module.Vapi;
+            } catch (e2) {
+                document.getElementById('status').innerHTML = '❌ Failed to load Vapi SDK: ' + e2.message;
+                console.error('Failed to load Vapi:', e1, e2);
+                throw e2;
+            }
+        }
+        
+        console.log('Vapi loaded:', Vapi);
+        
+        const vapi = new Vapi('a6d1dce6-0a06-4d87-a43c-0a63bb2bba99');
+        const status = document.getElementById('status');
+        
+        vapi.on('call-start', () => {
+            status.innerHTML = '✅ Call started successfully!';
+            console.log('Call started!');
+        });
+        
+        vapi.on('error', (error) => {
+            console.error('Detailed Vapi error:', error);
+            console.error('Error type:', typeof error);
+            console.error('Error keys:', Object.keys(error || {}));
+            status.innerHTML = `❌ Error: ${JSON.stringify(error, null, 2)}`;
+        });
+        
+        vapi.on('call-end', () => {
+            status.innerHTML = '📞 Call ended';
+            console.log('Call ended');
+        });
+        
+        // Make testCall available globally
+        window.testCall = () => {
+            status.innerHTML = '🔄 Starting call...';
+            console.log('Attempting to start call...');
+            try {
+                // Try different configuration formats
+                console.log('Trying method 1: assistantId only');
+                vapi.start('b8442b2e-f220-48d3-8554-9ef3d6c7474f');
+            } catch (error) {
+                console.error('Method 1 failed:', error);
+                try {
+                    console.log('Trying method 2: assistant object');
+                    vapi.start({
+                        assistant: {
+                            id: 'b8442b2e-f220-48d3-8554-9ef3d6c7474f'
+                        }
+                    });
+                } catch (error2) {
+                    console.error('Method 2 failed:', error2);
+                    try {
+                        console.log('Trying method 3: empty config');
+                        vapi.start();
+                    } catch (error3) {
+                        console.error('All methods failed:', error3);
+                        status.innerHTML = `❌ All methods failed. Last error: ${error3.message}`;
+                    }
+                }
+            }
+        };
+        
+        status.innerHTML = '✅ Vapi loaded successfully. Ready to test!';
+    </script>
+    
+    <script>
+        document.getElementById('test-call').addEventListener('click', () => {
+            if (window.testCall) {
+                window.testCall();
+            } else {
+                document.getElementById('status').innerHTML = '❌ Test function not ready yet';
+            }
+        });
+    </script>
+</body>
+</html>

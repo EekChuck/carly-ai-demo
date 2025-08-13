@@ -4,7 +4,21 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { GlassCard } from "@/components/ui/glass-card";
 import { AnimatedBackground } from "@/components/ui/animated-background";
-// Temporarily disabled: import { VoiceInterface } from "@/components/ui/voice-interface";
+import dynamic from "next/dynamic";
+
+// Dynamically import VoiceInterface to avoid SSR issues
+// Using simpler version to avoid React SDK issues
+const VoiceInterface = dynamic(
+  () => import("@/components/ui/voice-interface-simple").then(mod => mod.VoiceInterfaceSimple),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="text-center p-4">
+        <p className="text-cyan-400 text-sm">Loading voice interface...</p>
+      </div>
+    )
+  }
+);
 import {
   Car,
   Calendar,
@@ -150,11 +164,12 @@ export default function Home() {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
 
   const handleTaskSelect = async (taskId: string, agent: Agent) => {
-    // Simplified version without webhook calls
     setSelectedTask(taskId);
     setSelectedAgent(agent);
     setIsListening(true);
-    setIsSpeaking("agent");
+    
+    // Initialize voice interface for the selected task
+    console.log(`Starting voice demo for task: ${taskId} with agent: ${agent}`);
   };
 
   return (
@@ -389,39 +404,21 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-center z-30 mt-16 space-y-6"
+                  className="text-center z-30 mt-16"
                 >
-                  <motion.p 
-                    className="text-2xl text-white font-light tracking-wide"
-                  >
-                    Voice Demo Ready (Vapi Integration Disabled)
-                  </motion.p>
-                  
-                  <div className="flex justify-center items-end gap-1.5">
-                    {[...Array(9)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className={`w-1.5 rounded-full ${
-                          selectedAgent === "carly" ? "bg-cyan-400" : "bg-purple-400"
-                        }`}
-                        animate={{
-                          height: [4, 25 + Math.random() * 15, 4],
-                          opacity: [0.5, 1, 0.5],
-                        }}
-                        transition={{
-                          duration: 1 + Math.random() * 0.5,
-                          delay: i * 0.1,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span>Demo Mode • Vapi Integration Coming Soon</span>
-                  </div>
+                  <VoiceInterface
+                    agent={selectedAgent}
+                    taskId={selectedTask || undefined}
+                    onSpeechStart={() => setIsSpeaking("agent")}
+                    onSpeechEnd={() => setIsSpeaking(null)}
+                    onVolumeLevel={(volume) => setAudioLevel(volume)}
+                    onCallEnd={() => {
+                      setIsListening(false);
+                      setSelectedAgent(null);
+                      setSelectedTask(null);
+                      setIsSpeaking(null);
+                    }}
+                  />
                 </motion.div>
               </div>
             )}
